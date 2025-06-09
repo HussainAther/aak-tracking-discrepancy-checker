@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-API_URL = os.getenv("API_URL")
 API_KEY = os.getenv("API_KEY")
-HEADERS = {"Authorization": f"Bearer {API_KEY}"}
+HEADERS = {"x-api-key": API_KEY}
+API_URL = os.getenv("API_URL")
 
 ENDPOINTS = {
     "sessions": "/employee_data_sessions",
@@ -33,5 +33,6 @@ def fetch_all_logs():
             if res.status_code == 200:
                 logs[eid][key] = res.json()
             else:
-                print(f"Error fetching {key} for {eid}: {res.status_code}")
+                print(f"❌ Error fetching {key} for {eid}: {res.status_code} — {res.text}")
     return logs
+
