@@ -1,25 +1,29 @@
 import pandas as pd
+from datetime import datetime
 
 def analyze_discrepancies(logs):
-    report = []
-    for eid, data in logs.items():
-        session_data = data.get("sessions", [])
-        if not session_data:
-            print(f"No session data for {eid}")
-            continue
+    result = {}
 
-        df = pd.DataFrame(session_data)
+    # Session time analysis
+    session_df = pd.DataFrame(logs.get("sessions", []))
+    if not session_df.empty:
+        session_df["start_time"] = pd.to_datetime(session_df["start_time"])
+        session_df["end_time"] = pd.to_datetime(session_df["end_time"])
+        session_df["duration_min"] = (session_df["end_time"] - session_df["start_time"]).dt.total_seconds() / 60
+        session_summary = session_df.groupby(session_df["start_time"].dt.date)["duration_min"].sum().reset_index()
+        result["sessions"] = session_summary.to_dict(orient="records")
 
-        if 'start_time' not in df.columns or 'end_time' not in df.columns:
-            print(f"Missing start_time/end_time for employee {eid}, columns found: {df.columns.tolist()}")
-            continue
+    # Mouse movement
+    mouse_df = pd.DataFrame(logs.get("mouse", []))
+    if not mouse_df.empty and "timestamp" in mouse_df.columns:
+        mouse_df["timestamp"] = pd.to_datetime(mouse_df["timestamp"])
+        result["mouse_activity_count"] = len(mouse_df)
 
-        df['start_time'] = pd.to_datetime(df['start_time'])
-        df['end_time'] = pd.to_datetime(df['end_time'])
-        df['duration'] = (df['end_time'] - df['start_time']).dt.total_seconds() / 60  # minutes
-        df['date'] = df['start_time'].dt.date
+    # Keyboard activity
+    keyboard_df = pd.DataFrame(logs.get("keyboard", []))
+    if not keyboard_df.empty and "timestamp" in keyboard_df.columns:
+        keyboard_df["timestamp"] = pd.to_datetime(keyboard_df["timestamp"])
+        result["keyboard_activity_count"] = len(keyboard_df)
 
-        daily_summary = df.groupby('date')['duration'].sum().reset_index()
-        report.append((eid, daily_summary))
-    return report
+    return result
 
